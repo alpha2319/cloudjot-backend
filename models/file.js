@@ -15,6 +15,11 @@ const file = new mongoose.Schema({
     createTime: {
         type: Date,
         default: new Date.now()
+    },
+
+    name: {
+        type: String,
+        required: true
     }
 })
 
