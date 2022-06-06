@@ -10,12 +10,6 @@ const file = new mongoose.Schema({
 
     link: {             //* field specs will be updated as needed with respect to amazon S3
         type: String,
-        required: true
-    },
-
-    key: {              //* field specs will be updated as needed with respect to amazon S3
-        type: String,
-        required: true
     },
 
     createTime: {
@@ -27,6 +21,10 @@ const file = new mongoose.Schema({
 file.virtual("age",get(function(){
     const now = new Date.now();
     return now.getTime() - this.createTime.getTime();
+}))
+
+file.virtual("key",get(function(){
+    return this._id;
 }))
 
 module.exports = mongoose.model("file",file);
