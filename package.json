@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "This is 3rd year minor project.",
   "main": "app.js",
+  "engines": {"node":"12.18.3"},
   "scripts": {
     "start": "nodemon app.js"
   },
