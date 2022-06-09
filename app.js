@@ -7,17 +7,23 @@
 //We also have to implement a method which deletes files from both MongoDB and amazon S3 after 5 days
 
 require('dotenv').config()
-
+const cors=require("cors");
+const corsOptions ={
+   origin:'*', 
+   credentials:true,            //access-control-allow-credentials:true
+   optionSuccessStatus:200,
+}
 var express = require("express");
 var fileUpload = require("express-fileupload");
 
 const app = express();
 app.use(fileUpload());
+app.use(cors(corsOptions)) 
 
 //make database connection
 var mongoose = require("mongoose");
 
-const MongoDB = process.env.DB_URL
+const MongoDB = "mongodb+srv://m-001-student:m001-mongodb@sandbox.zoqk7.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
 mongoose.connect(MongoDB,{useNewUrlParser:true, useUnifiedTopology: true})
 
@@ -25,7 +31,7 @@ var db = mongoose.connection;
 db.on('error',console.error.bind(console,"Connection Error"))
 
 
-const {uploadFile,getUploadFile,deleteUploadFile} = require('./s3.js')
+const {uploadFile,getUploadFile,getDownloadUrl} = require('./s3.js')
 var Record = require("./models/record");
 var File = require("./models/file");
 
@@ -41,11 +47,7 @@ app.use(express.urlencoded(
    { extended:false}
 ))
 
-app.get("/",(req,res)=>{
-    console.log('heellloooo')
-    res.send('<h1>hello dost</h1>')
-    res.end()
-})
+
 
 
 app.post("/records", async (req,res,next)=>{
@@ -53,7 +55,7 @@ app.post("/records", async (req,res,next)=>{
     try{
         
         if(!req.files){
-            res.status(401).json({
+            res.status(400).json({
                 error: "No file Found in request"
             })
         }
@@ -74,7 +76,6 @@ app.post("/records", async (req,res,next)=>{
 
             fileKey.forEach((async (key)=>{
                 
-                console.log(req.files[key])
                 const result = await uploadFile(req.files[key])
                 console.log(result)
                 //upload file on the database
@@ -87,8 +88,6 @@ app.post("/records", async (req,res,next)=>{
 
                 await file.save()
 
-                console.log(result)
-
             }))
 
             //send response back to the reciever
@@ -97,59 +96,53 @@ app.post("/records", async (req,res,next)=>{
         
         }
     } catch (error){
-        
+        console.log(error)
         res.status(500).json({error:error});
     }
 })
 
 
-app.get("/records/:key", async (req,res,next)=>{
+app.get("/records/:key", async (req,res)=>{
 
-    Record.findById(req.params.key)
-    .exec(function(err,record){
+    try{
+        const record = await Record.findById(req.params.key)
+        
+        if(record == null){
 
-        if(err){
-            return next(err);
-        }
+            res.status(404).json({message:"Record not found"})
 
-        if(record==null){
-            var err = new Error("Record not found");
-            err.status = 404;
-            return next(err);
-        }
+        }else{
 
-        if(record.age>=process.env.MAX_TIME){
-            res.status(404).send("Record deleted");
-        }
-
-        else{
-
-            File.find({record:record.key})
-            .exec(async function(err,files){
-                if(err){
-                    return next(err);
-                }
-
+            if(record.age >= process.env.MAX_TIME){
+                res.status(400).send("Record deleted");
+            }
+            else{
+                const files = await File.find({record:record.key})
                 if(files==null){
-                    var err = new Error("Files not found");
-                    err.status = 404;
-                    return next(err);
+                    res.status(404).json({message:"Files not found"})
                 }
-
+            
                 var responseFiles = [];     //*
 
                 for(var i = 0; i<files.length; i+=1){
-
-                    const result = await getUploadFile(files[i].key);
-                    responseFiles.push({file:files[i].location, name:files[i].name})
-                    console.log(result)
+                    const result = await getDownloadUrl(files[i].key);
+                    
+                    responseFiles.push({file:result, name:files[i].name})
                 }
                 
-                res.status(200).json({files: responseFiles});
-               
-            })
-        } 
-    })
+                res.status(200).json({files:responseFiles});
+                
+
+            }
+
+        }   
+
+    }catch(e){
+        console.log(e)
+        res.status(500).json({error:error})
+    }
+    
+    
 })
 
 

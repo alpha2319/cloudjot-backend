@@ -7,22 +7,24 @@ require('dotenv').config()
 setInterval(async ()=>{
     try{
        let record  = await Record.find({});
+       if(record){
         
-       if( record.age >= process.env.MAX_TIME){
+            if( record.age >= process.env.MAX_TIME){
 
-            let files = await File.find({record:record.id});
+                let files = await File.find({record:record.id});
 
-            if(files){
+                if(files){
 
-                const result = deleteUploadFile(file.key);
-                await File.deleteById(files._id)
-                
-                console.log('File deleted'+ result)
+                    const result = deleteUploadFile(file.key);
+                    await File.deleteById(files._id)
+                    
+                    console.log('File deleted'+ result)
+                }
             }
-        }
+       }    
     }    
      catch(e){
        console.log(e)
    }
 
-},3000)
+},86400000)

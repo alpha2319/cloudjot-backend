@@ -1,4 +1,5 @@
 var AWS = require("aws-sdk");
+var fs = require('fs')
 require('dotenv').config();
 
 // Enter copied or downloaded access ID and secret key here for accessing amazon S3
@@ -23,7 +24,8 @@ function uploadFile(file){
     const uploadParams ={
         Bucket:bucket,
         Body:file.data,
-        Key:file.name
+        Key:Date.now() + file.name,
+        ContentType:file.mimetype
     }
 
     return s3.upload(uploadParams).promise()
@@ -45,6 +47,16 @@ function getUploadFile(fileKey){
 
 exports.getUploadFile = getUploadFile
 
+function getDownloadUrl(fileKey){
+    const downloadParams = {
+        Bucket :bucket,
+        Key: fileKey
+    }
+
+    return s3.getSignedUrl("getObject",downloadParams);
+}
+exports.getDownloadUrl = getDownloadUrl;
+
 //delete file from s3
 function deleteUploadFile(filekey){
 
@@ -53,7 +65,7 @@ function deleteUploadFile(filekey){
         Key: filekey
     }
 
-    return s3.deleteObject(deleteParams).promise();
+    return s3.deleteObject(deleteParams).createReadStream();
 }
 
 exports.deleteUploadFile = deleteUploadFile
