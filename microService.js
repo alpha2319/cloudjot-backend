@@ -1,26 +1,32 @@
-const {uploadFile,getUploadFile,deleteUploadFile} = require('./s3.js')
+const {deleteUploadFile} = require('./s3.js')
 var Record = require("./models/record");
 var File = require("./models/file");
 require('dotenv').config()
 
 
 setInterval(async ()=>{
+    
     try{
        let record  = await Record.find({});
        if(record){
-        
-            if( record.age >= process.env.MAX_TIME){
 
-                let files = await File.find({record:record.id});
+            for(let i=0;i<record.length;i++){
+                
+                if( record[i].age >= 432000000){
+                    let files = await File.find({record:record[i].id});
+    
+                    if(files){
+                        for(let j=0;j<files.length;j++){
 
-                if(files){
-
-                    const result = deleteUploadFile(file.key);
-                    await File.deleteById(files._id)
-                    
-                    console.log('File deleted'+ result)
+                            const result = await deleteUploadFile(files[j].key);
+                            await File.findByIdAndRemove(files[j]._id)
+                            console.log('File deleted'+ result)
+                        }
+                    }    
                 }
-            }
+                
+            } 
+            
        }    
     }    
      catch(e){
@@ -28,3 +34,4 @@ setInterval(async ()=>{
    }
 
 },86400000)
+

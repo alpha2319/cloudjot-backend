@@ -105,37 +105,42 @@ app.post("/records", async (req,res,next)=>{
 app.get("/records/:key", async (req,res)=>{
 
     try{
-        const record = await Record.findById(req.params.key)
+        if(req.params.key.length == 24){
+            console.log(req.params.key.length)
+            const record = await Record.findById(req.params.key)
+          
         
-        if(record == null){
+            if(record == null){
 
-            res.status(404).json({message:"Record not found"})
+                res.status(404).json({message:"Record not found"})
 
-        }else{
+            }else{
 
-            if(record.age >= process.env.MAX_TIME){
-                res.status(400).send("Record deleted");
-            }
-            else{
-                const files = await File.find({record:record.key})
-                if(files==null){
-                    res.status(404).json({message:"Files not found"})
+                if(record.age >= process.env.MAX_TIME){
+                    res.status(400).send("Record deleted");
                 }
-            
-                var responseFiles = [];     //*
+                else{
+                    const files = await File.find({record:record.key})
+                    if(files==null){
+                        res.status(404).json({message:"Files not found"})
+                    }
+                
+                    var responseFiles = [];     //*
 
-                for(var i = 0; i<files.length; i+=1){
-                    const result = await getDownloadUrl(files[i].key);
+                    for(var i = 0; i<files.length; i+=1){
+                        const result = await getDownloadUrl(files[i].key);
+                        
+                        responseFiles.push({file:result, name:files[i].name})
+                    }
                     
-                    responseFiles.push({file:result, name:files[i].name})
+                    res.status(200).json({files:responseFiles});
+        
                 }
-                
-                res.status(200).json({files:responseFiles});
-                
 
-            }
-
-        }   
+            } 
+        }else{
+            res.status(404).json({message:"Invalid Key"})
+        }  
 
     }catch(e){
         console.log(e)

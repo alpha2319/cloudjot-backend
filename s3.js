@@ -24,7 +24,7 @@ function uploadFile(file){
     const uploadParams ={
         Bucket:bucket,
         Body:file.data,
-        Key:Date.now() + file.name,
+        Key:Date.now() +"-"+ file.name,
         ContentType:file.mimetype
     }
 
@@ -64,8 +64,8 @@ function deleteUploadFile(filekey){
         Bucket : bucket,
         Key: filekey
     }
-
-    return s3.deleteObject(deleteParams).createReadStream();
+    
+    return s3.deleteObject(deleteParams).promise();
 }
 
 exports.deleteUploadFile = deleteUploadFile
