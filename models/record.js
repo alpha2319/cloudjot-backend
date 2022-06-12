@@ -9,18 +9,17 @@ const record = new mongoose.Schema({
 
     createTime: {
         type: Date,
-        default: new Date.now(),
-        required: true
+        default: new Date(),
     }
 })
 
-record.virtual("age",get(function(){
-    const now = new Date.now();
-    return now.getTime() - this.createTime.getTime();
-}))
+record.virtual("age").get(function(){
+    
+    return this.createTime.getTime();
+})
 
-record.virtual("key",get(function(){
+record.virtual("key").get(function(){
     return this._id;
-}))
+})
 
 module.exports = mongoose.model("record",record);

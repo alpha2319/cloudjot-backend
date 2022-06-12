@@ -6,163 +6,143 @@
 //We also have to implement Single Origin call (for only our front-end app)
 //We also have to implement a method which deletes files from both MongoDB and amazon S3 after 5 days
 
+require('dotenv').config()
+const cors=require("cors");
+const corsOptions ={
+   origin:'*', 
+   credentials:true,            //access-control-allow-credentials:true
+   optionSuccessStatus:200,
+}
 var express = require("express");
-var bodyParser = require("body-parser");
-var mongoose = require("mongoose");
 var fileUpload = require("express-fileupload");
-var AWS = require("aws-sdk");
 
-// Enter copied or downloaded access ID and secret key here for accessing amazon S3
-const ID = '';
-const SECRET = '';
+const app = express();
+app.use(fileUpload());
+app.use(cors(corsOptions)) 
 
-// The name of the bucket that you have created
-const bucketName = '';
+//make database connection
+var mongoose = require("mongoose");
 
-AWS.config.update({
-    accessKeyId: ID,
-    secretAccessKey: SECRET,
-    region: process.env.region
-})
+const MongoDB = "mongodb+srv://m-001-student:m001-mongodb@sandbox.zoqk7.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
-var s3 = new AWS.S3();      //*
+mongoose.connect(MongoDB,{useNewUrlParser:true, useUnifiedTopology: true})
+
+var db = mongoose.connection;
+db.on('error',console.error.bind(console,"Connection Error"))
 
 
-
+const {uploadFile,getUploadFile,getDownloadUrl} = require('./s3.js')
 var Record = require("./models/record");
 var File = require("./models/file");
 
-var MongoDB = "";
 
-mongoose.connect(MongoDB,{
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
+const port = (process.env.port || 3001);
 
-var db = mongoose.connection;
-db.on("error",console.error.bind("MongoDB connection error"));
+//import the micriservice
+require('./microService')
 
 
-
-const port = (process.env.port || 3000);
-
-const app = express();
-
-app.use(fileUpload);
-app.use(bodyParser.json());
+app.use(express.json())
+app.use(express.urlencoded(
+   { extended:false}
+))
 
 
 
-app.post("/records/:key",(req,res,next)=>{
 
-    Record.find(req.params.key)
-    .exec(function(err,record){
-        if(err){
-            return next(err);
-        }
-        if(record==null){
-            var err = new Error("Record not found");
-            err.status = 404;
-            return next(err);
-        }
-        if(record.age>432,000,000){
-            res.status(404).send("Record deleted");
-        }
+app.post("/records", async (req,res,next)=>{
 
-        File.find({record:record.key})
-        .exec(function(err,files){
-            if(err){
-                return next(err);
-            }
-            if(files==null){
-                var err = new Error("Files not found");
-                err.status = 404;
-                return next(err);
-            }
-
-            var responseFiles = [];     //*
-
-            for(var i = 0; i<files.length; i+=1){
-                var params = {
-                    Bucket: bucketName,
-                    Key: files[i].key
-                }
-
-                s3.getObject(params,function(err,data){
-                    if(err){
-                        return next(err);
-                    }
-
-                    responseFiles.push({
-                        name: files[i].name,
-                        key: files[i].key,
-                        file: data.body
-                    })
-                })
-            }
-
-            res.send(responseFiles);
-        })
-    })
-})
-
-app.post("/records",(req,res,next)=>{
     try{
+        
         if(!req.files){
-            res.send({
-                status: false,
-                message: "No file uploaded"
+            res.status(400).json({
+                error: "No file Found in request"
             })
         }
 
         else{
+
+            
             var record = new Record({
                 ipAddress: req.ip
             })
 
-            record.save(function(err){
-                if(err){
-                    res.status(500).send(err);
-                }
-            })
+            let data = await record.save();
 
-            var recordKey = record.key;     //*
+            var recordKey = data.key;     //*
+            console.log(data.key)
+            //get files from request
+            var fileKey = Object.keys(req.files);
 
-            for (var i = 0; i<req.files.entries.length; i++){
-                var fileBuffer = req.files.entries[i];      //*
+            fileKey.forEach((async (key)=>{
                 
-                var file = new File({
+                const result = await uploadFile(req.files[key])
+                console.log(result)
+                //upload file on the database
+                const file = new File({
+                    location:result.Location,
+                    key:result.Key,
                     record:recordKey,
-                    name:req.files.entries[i].name
+                    name:result.Key
                 })
 
-                file.save(function(err){
-                    if(err){
-                        res.status(500).send(err);
-                    }
-                })
+                await file.save()
 
-                var fileKey = file.key;     //*
+            }))
 
-                var params = {
-                    Bucket: bucketName,
-                    Key: fileKey,
-                    Body: fileBuffer
-                }
-
-                s3.upload(params,function(err,data){
-                    if(err){
-                        throw err;
-                    }
-
-                    console.log("File uploaded successfully at "+data.location);
-                    //code to extract data.location to link field of the current file database object (I believe it is optional)
-                })
-            }
+            //send response back to the reciever
+            res.status(201).json({key:recordKey})
+                    
+        
         }
     } catch (error){
-        res.status(500).send(error);
+        console.log(error)
+        res.status(500).json({error:error});
     }
+})
+
+
+app.get("/records/:key", async (req,res)=>{
+
+    try{
+        const record = await Record.findById(req.params.key)
+        
+        if(record == null){
+
+            res.status(404).json({message:"Record not found"})
+
+        }else{
+
+            if(record.age >= process.env.MAX_TIME){
+                res.status(400).send("Record deleted");
+            }
+            else{
+                const files = await File.find({record:record.key})
+                if(files==null){
+                    res.status(404).json({message:"Files not found"})
+                }
+            
+                var responseFiles = [];     //*
+
+                for(var i = 0; i<files.length; i+=1){
+                    const result = await getDownloadUrl(files[i].key);
+                    
+                    responseFiles.push({file:result, name:files[i].name})
+                }
+                
+                res.status(200).json({files:responseFiles});
+                
+
+            }
+
+        }   
+
+    }catch(e){
+        console.log(e)
+        res.status(500).json({error:error})
+    }
+    
+    
 })
 
 
@@ -173,13 +153,7 @@ app.use((req,res,next)=>{
 
 // error handler
 app.use(function(err, req, res, next) {
-    // set locals, only providing error in development
-    res.locals.message = err.message;
-    res.locals.error = req.app.get('env') === 'development' ? err : {};
-  
-    // render the error page
-    res.status(err.status || 500);
-    res.send(err);
+    res.status(500).json({error:err.message})
   });
 
 app.listen(port,(req,res)=>{
