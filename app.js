@@ -36,7 +36,7 @@ var Record = require("./models/record");
 var File = require("./models/file");
 
 
-const port = (process.env.port || 3001);
+const port = (process.env.PORT || 3001);
 
 //import the micriservice
 require('./microService')
