@@ -24,7 +24,7 @@ function uploadFile(file){
     const uploadParams ={
         Bucket:bucket,
         Body:file.data,
-        Key:Date.now() + file.name,
+        Key:Date.now() +"-"+ file.name,
         ContentType:file.mimetype
     }
 
@@ -50,10 +50,11 @@ exports.getUploadFile = getUploadFile
 function getDownloadUrl(fileKey){
     const downloadParams = {
         Bucket :bucket,
-        Key: fileKey
+        Key: fileKey,
+        Expires:20000,
+        ResponseContentDisposition :  `attachment; filename="${fileKey}"`
     }
-
-    return s3.getSignedUrl("getObject",downloadParams);
+    return s3.getSignedUrl("getObject",downloadParams)
 }
 exports.getDownloadUrl = getDownloadUrl;
 
@@ -64,8 +65,8 @@ function deleteUploadFile(filekey){
         Bucket : bucket,
         Key: filekey
     }
-
-    return s3.deleteObject(deleteParams).createReadStream();
+    
+    return s3.deleteObject(deleteParams).promise();
 }
 
 exports.deleteUploadFile = deleteUploadFile

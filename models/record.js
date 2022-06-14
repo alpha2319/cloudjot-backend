@@ -15,7 +15,7 @@ const record = new mongoose.Schema({
 
 record.virtual("age").get(function(){
     
-    return this.createTime.getTime();
+    return Date.now() - this.createTime.getTime();
 })
 
 record.virtual("key").get(function(){

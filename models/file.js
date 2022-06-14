@@ -31,13 +31,17 @@ const file = new Schema({
     }
 })
 
-file.virtual("age)").get(function(){
+file.virtual("age").get(function(){
     
     return this.createTime.getTime();
 })
 
-// file.virtual("key",get(function(){
-//     return this._id;
-// }))
+file.virtual("id").get(function(){
+     return this._id;
+})
+
+file.virtual('keyName').get(function(){
+    return this.key;
+})
 
 module.exports = mongoose.model("file",file);
