@@ -50,10 +50,11 @@ exports.getUploadFile = getUploadFile
 function getDownloadUrl(fileKey){
     const downloadParams = {
         Bucket :bucket,
-        Key: fileKey
+        Key: fileKey,
+        Expires:20000,
+        ResponseContentDisposition :  `attachment; filename="${fileKey}"`
     }
-
-    return s3.getSignedUrl("getObject",downloadParams);
+    return s3.getSignedUrl("getObject",downloadParams)
 }
 exports.getDownloadUrl = getDownloadUrl;
 

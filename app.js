@@ -106,7 +106,7 @@ app.get("/records/:key", async (req,res)=>{
 
     try{
         if(req.params.key.length == 24){
-            console.log(req.params.key.length)
+            
             const record = await Record.findById(req.params.key)
           
         
@@ -129,7 +129,7 @@ app.get("/records/:key", async (req,res)=>{
 
                     for(var i = 0; i<files.length; i+=1){
                         const result = await getDownloadUrl(files[i].key);
-                        
+                        // const result = files[i].Location;
                         responseFiles.push({file:result, name:files[i].name})
                     }
                     
