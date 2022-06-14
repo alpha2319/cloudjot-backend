@@ -3,10 +3,10 @@ var fs = require('fs')
 require('dotenv').config();
 
 // Enter copied or downloaded access ID and secret key here for accessing amazon S3
-const ID = process.env.AWS_ACCESS_KEY
-const SECRET = process.env.AWS_SECRET_KEY
-const region = process.env.AWS_BUCKET_REGION
-const bucket = process.env.AWS_BUCKET_NAME
+const ID = 'AKIASSZHZZLBGK4RRLJI'
+const SECRET = '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'
+const region = 'us-west-2'
+const bucket = 'cloud-jot-bucket'
 
 
 AWS.config.update({
