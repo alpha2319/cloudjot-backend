@@ -33,5 +33,5 @@ setInterval(async ()=>{
        console.log(e)
    }
 
-},86400000)
+},900000)
 
