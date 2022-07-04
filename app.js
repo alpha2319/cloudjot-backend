@@ -23,7 +23,7 @@ app.use(cors(corsOptions))
 //make database connection
 var mongoose = require("mongoose");
 
-const MongoDB = process.env.DB_URL//"mongodb+srv://m-001-student:m001-mongodb@sandbox.zoqk7.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+const MongoDB = "mongodb+srv://m-001-student:m001-mongodb@sandbox.zoqk7.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
 
 mongoose.connect(MongoDB,{useNewUrlParser:true, useUnifiedTopology: true})
 
