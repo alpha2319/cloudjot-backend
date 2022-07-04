@@ -1,12 +1,13 @@
+require('dotenv').config();
 var AWS = require("aws-sdk");
 var fs = require('fs')
-require('dotenv').config();
+
 
 // Enter copied or downloaded access ID and secret key here for accessing amazon S3
-const ID = AWS_ACCESS_KEY
-const SECRET = AWS_SECRET_KEY
-const region = AWS_BUCKET_REGION
-const bucket = AWS_BUCKET_NAME
+const ID = process.env.AWS_ACCESS_KEY
+const SECRET = process.env.AWS_SECRET_KEY
+const region = process.env.AWS_BUCKET_REGION
+const bucket = process.env.AWS_BUCKET_NAME
 
 
 AWS.config.update({
