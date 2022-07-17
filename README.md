@@ -1,2 +1,2 @@
-# cloudjot-backend-starter-001
+# cloudjot-backend
 Starting template and code for backend of the project "CloudJot", 2319001.
