@@ -86,7 +86,7 @@ app.post("/records", async (req,res,next)=>{
                     name:result.Key
                 })
 
-                await file.save()
+                const files =  await file.save()
 
             }))
 
