@@ -15,6 +15,8 @@ const corsOptions ={
 }
 var express = require("express");
 var fileUpload = require("express-fileupload");
+const admzip = require("adm-zip");
+const fs = require("fs");
 
 const app = express();
 app.use(fileUpload());
@@ -23,7 +25,7 @@ app.use(cors(corsOptions))
 //make database connection
 var mongoose = require("mongoose");
 
-const MongoDB = "mongodb+srv://m-001-student:m001-mongodb@sandbox.zoqk7.mongodb.net/myFirstDatabase?retryWrites=true&w=majority";
+const MongoDB = process.env.MONGO_URL;
 
 mongoose.connect(MongoDB,{useNewUrlParser:true, useUnifiedTopology: true})
 
@@ -69,15 +71,21 @@ app.post("/records", async (req,res,next)=>{
 
             let data = await record.save();
 
-            var recordKey = data.key;     //*
-            console.log(data.key)
-            //get files from request
+            var recordKey = data.key;
+
+            const zip = new admzip();
             var fileKey = Object.keys(req.files);
 
             fileKey.forEach((async (key)=>{
-                
-                const result = await uploadFile(req.files[key])
-                console.log(result)
+                zip.addFile(req.files[key].name, Buffer.from(req.files[key].data));
+            }))
+
+            const zipName = "output.zip";
+            fs.writeFileSync(zipName, zip.toBuffer());
+
+            const result = await uploadFile({data:fs.readFileSync(zipName), name:zipName, mimetype:"application/zip"});
+
+            console.log(result)
                 //upload file on the database
                 const file = new File({
                     location:result.Location,
@@ -86,9 +94,7 @@ app.post("/records", async (req,res,next)=>{
                     name:result.Key
                 })
 
-                const files =  await file.save()
-
-            }))
+            const files =  await file.save()
 
             //send response back to the reciever
             res.status(201).json({key:recordKey})
